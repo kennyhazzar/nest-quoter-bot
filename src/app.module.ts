@@ -8,14 +8,14 @@ import { GoogleService } from './google/google.service';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: ['env.development.local', 'env.production.local']
+      envFilePath: ['env.development.local', 'env.production.local'],
     }),
     MongooseModule.forRoot(process.env.MONGODB_URI),
     TelegrafModule.forRoot({
       token: process.env.TELEGRAM_TOKEN,
-    })
+    }),
   ],
   controllers: [],
   providers: [GoogleService],
 })
-export class AppModule { }
+export class AppModule {}

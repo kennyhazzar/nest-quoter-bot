@@ -1,5 +1,5 @@
 ﻿export class CellsRangeDto {
-    range: string;
-    majorDimension: string;
-    values: [Array<string>]
+  range: string;
+  majorDimension: string;
+  values: [Array<string>];
 }

@@ -3,6 +3,8 @@ import { ConfigModule } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { TelegrafModule } from 'nestjs-telegraf';
 import { GoogleService } from './google/google.service';
+import { GoogleController } from './google/google.controller';
+import { GoogleModule } from './google/google.module';
 
 @Module({
   imports: [
@@ -14,8 +16,9 @@ import { GoogleService } from './google/google.service';
     TelegrafModule.forRoot({
       token: process.env.TELEGRAM_TOKEN,
     }),
+    GoogleModule,
   ],
-  controllers: [],
+  controllers: [GoogleController],
   providers: [GoogleService],
 })
 export class AppModule {}

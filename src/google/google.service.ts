@@ -12,9 +12,10 @@ import {
 
 @Injectable()
 export class GoogleService {
+  expiresIn: number;
+  updateTokenTimestamp: number;
   private accessToken: string;
   private api: AxiosInstance;
-  private updateTokenTimestamp: number;
   private spreadsheetInfo: SpreadsheetInformationDto;
   constructor(
     @InjectModel(SpreadsheetInformationDto.name)
@@ -29,7 +30,7 @@ export class GoogleService {
     this.updateAccessToken();
   }
 
-  private async updateAccessToken(): Promise<void> {
+  async updateAccessToken(): Promise<void> {
     try {
       const { data } = await axios.post<GetAccessTokenDto>(
         `https://oauth2.googleapis.com/token`,
@@ -43,6 +44,7 @@ export class GoogleService {
 
       this.accessToken = data.access_token;
       this.updateTokenTimestamp = Date.now();
+      this.expiresIn = data.expires_in * 1000;
     } catch (error) {
       console.log(error);
     }
@@ -106,15 +108,23 @@ export class GoogleService {
     }
   }
 
-  async getCell(spreadsheetId: string, range: string): Promise<CellsRangeDto> {
-    if (Date.now() - this.updateTokenTimestamp >= 10000) {
-      await this.updateAccessToken();
-    }
+  async getCellByRange(
+    spreadsheetId: string,
+    range = 'A:ZZ',
+  ): Promise<CellsRangeDto> {
     const { data } = await this.api.get<CellsRangeDto>(
       encodeURI(
         `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}`,
       ),
     );
     return data;
+  }
+
+  getCurrentAccessToken(): string {
+    return this.accessToken;
+  }
+
+  getUpdateTokenTimestamp(): number {
+    return this.updateTokenTimestamp;
   }
 }

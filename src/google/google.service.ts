@@ -67,7 +67,8 @@ export class GoogleService {
       return newSheet;
     }
 
-    this.createSheet(newSheet);
+    await this.createSheet(newSheet);
+    this.spreadsheetInfo = newSheet;
     return newSheet;
   }
 

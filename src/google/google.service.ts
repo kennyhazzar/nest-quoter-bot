@@ -14,9 +14,9 @@ import {
 export class GoogleService {
   expiresIn: number;
   updateTokenTimestamp: number;
+  spreadsheetInfo: SpreadsheetInformationDto;
   private accessToken: string;
   private api: AxiosInstance;
-  private spreadsheetInfo: SpreadsheetInformationDto;
   constructor(
     @InjectModel(SpreadsheetInformationDto.name)
     private SpreadsheetModel: Model<SpreadsheetDocument>,
@@ -50,12 +50,9 @@ export class GoogleService {
     }
   }
 
-  private async getCurrentSpreadsheet(id: string) {
-    const sheet = await this.SpreadsheetModel.findOne({ spreadSheetId: id });
-    if (!sheet) {
-      return { result: false };
-    }
-    return sheet;
+  async getCurrentSpreadsheet(): Promise<SpreadsheetInformationDto> {
+    const sheet = await this.SpreadsheetModel.find();
+    return sheet ? sheet[0] : null;
   }
 
   async addSpreadsheet(id?: string): Promise<SpreadsheetInformationDto> {
@@ -108,23 +105,12 @@ export class GoogleService {
     }
   }
 
-  async getCellByRange(
-    spreadsheetId: string,
-    range = 'A:ZZ',
-  ): Promise<CellsRangeDto> {
+  async getCellByRange(range = 'A:ZZ'): Promise<CellsRangeDto> {
     const { data } = await this.api.get<CellsRangeDto>(
       encodeURI(
-        `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}`,
+        `https://sheets.googleapis.com/v4/spreadsheets/${this.spreadsheetInfo.spreadSheetId}/values/${range}`,
       ),
     );
     return data;
-  }
-
-  getCurrentAccessToken(): string {
-    return this.accessToken;
-  }
-
-  getUpdateTokenTimestamp(): number {
-    return this.updateTokenTimestamp;
   }
 }

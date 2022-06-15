@@ -30,6 +30,7 @@ export class GoogleService {
       return config;
     });
     this.updateAccessToken();
+    this.getCurrentSpreadsheet();
   }
 
   async updateAccessToken(): Promise<void> {
@@ -53,6 +54,7 @@ export class GoogleService {
 
   async getCurrentSpreadsheet(): Promise<SpreadsheetInformationDto> {
     const sheet = await this.SpreadsheetModel.find();
+    this.spreadsheetInfo = sheet[0];
     return sheet ? sheet[0] : null;
   }
 
@@ -143,5 +145,25 @@ export class GoogleService {
       (sheet) => sheet.properties.title,
     );
     return lists ? lists : null;
+  }
+
+  async deleteSpreadsheet() {
+    try {
+      const deleted = await this.SpreadsheetModel.deleteOne({
+        id: this.spreadsheetInfo.spreadsheetId,
+      });
+
+      if (!deleted.acknowledged) {
+        return null;
+      }
+
+      this.spreadsheetInfo = null;
+    } catch (error) {
+      console.log(error);
+      throw new HttpException(
+        { result: 'error', error: 'something wrong in code ^^' },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 }

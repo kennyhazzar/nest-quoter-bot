@@ -9,8 +9,8 @@ export class AddSheetWizard {
 
   @WizardStep(1)
   startAddingSheet(@Context() ctx: Scenes.WizardContext) {
-    ctx.reply(
-      'Отправь мне id google таблицы. Пример:\nhttps://docs.google.com/spreadsheets/d/`sheet-id`/edit\n\nГде sheet-id - id твоей таблицы',
+    ctx.replyWithMarkdown(
+      'Отправь мне id google таблицы. Пример:\nhttps://docs.google.com/spreadsheets/d/`sheet-id`/edit\n\nГде `sheet-id` - id твоей таблицы',
       AbortMarkup,
     );
     ctx.wizard.next();
@@ -39,8 +39,10 @@ export class AddSheetWizard {
         reply_markup: {
           inline_keyboard: [
             [{ text: result.title, url: result.spreadsheetUrl }],
+            [{ text: 'Посмотреть', callback_data: 'show-information' }],
           ],
         },
+        parse_mode: 'Markdown',
       });
       return ctx.scene.leave();
     } catch (error: any) {

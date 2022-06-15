@@ -8,7 +8,7 @@ export type SpreadsheetDocument = SpreadsheetInformationDto & Document;
 
 @Schema()
 export class Spreadsheet {
-  @Prop({ required: true })
+  @Prop({ required: true, unique: true })
   spreadsheetId: string;
 
   @Prop({ type: String, required: true })

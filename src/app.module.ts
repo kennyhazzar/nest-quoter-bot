@@ -7,6 +7,7 @@ import { GoogleModule } from './google/google.module';
 import { SpreadsheetSchema } from './schemas/spreadsheet.schema';
 import { SpreadsheetInformationDto } from './google/dto/spreadsheet.dto';
 import { TelegramModule } from './telegram/telegram.module';
+import { session } from 'telegraf';
 
 @Module({
   imports: [
@@ -18,11 +19,12 @@ import { TelegramModule } from './telegram/telegram.module';
     MongooseModule.forFeature([
       { name: SpreadsheetInformationDto.name, schema: SpreadsheetSchema },
     ]),
+    TelegramModule,
     TelegrafModule.forRoot({
       token: process.env.TELEGRAM_TOKEN,
+      middlewares: [session()],
     }),
     GoogleModule,
-    TelegramModule,
   ],
   providers: [GoogleService],
 })

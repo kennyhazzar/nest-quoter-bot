@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import axios, { AxiosError, AxiosInstance } from 'axios';
 import { Model } from 'mongoose';
@@ -12,8 +12,8 @@ import {
 
 @Injectable()
 export class GoogleService {
-  expiresIn: number;
-  updateTokenTimestamp: number;
+  private expiresIn: number;
+  private updateTokenTimestamp: number;
   spreadsheetInfo: SpreadsheetInformationDto;
   private accessToken: string;
   private api: AxiosInstance;
@@ -22,9 +22,27 @@ export class GoogleService {
     private SpreadsheetModel: Model<SpreadsheetDocument>,
   ) {
     this.api = axios.create();
-    this.api.interceptors.request.use((config) => {
+    this.api.interceptors.request.use(async (config) => {
+      if (Date.now() - this.updateTokenTimestamp > this.expiresIn) {
+        await this.updateAccessToken();
+      }
+      if (
+        !config.url.includes('https://sheets.googleapis.com/v4/spreadsheets/')
+      ) {
+        const sheet = await this.getCurrentSpreadsheet();
+        if (sheet) {
+          this.spreadsheetInfo = sheet;
+        } else {
+          throw new HttpException(
+            {
+              result: 'error',
+              error: 'google sheet is not valid',
+            },
+            HttpStatus.NOT_FOUND,
+          );
+        }
+      }
       config.headers['Authorization'] = `Bearer ${this.accessToken}`;
-
       return config;
     });
     this.updateAccessToken();
@@ -41,7 +59,6 @@ export class GoogleService {
           refresh_token: process.env.REFRESH_TOKEN,
         },
       );
-
       this.accessToken = data.access_token;
       this.updateTokenTimestamp = Date.now();
       this.expiresIn = data.expires_in * 1000;
@@ -55,28 +72,43 @@ export class GoogleService {
     return sheet ? sheet[0] : null;
   }
 
-  async addSpreadsheet(id?: string): Promise<SpreadsheetInformationDto> {
+  async addSpreadsheet(id: string): Promise<SpreadsheetInformationDto> {
     const [sheets, newSheet] = await Promise.all([
       this.SpreadsheetModel.find().exec(),
       this.getSpreadsheetInformationById(id),
     ]);
 
-    if (sheets) {
-      await this.SpreadsheetModel.remove({});
-      this.createSheet(newSheet);
-      return newSheet;
-    }
+    try {
+      if (sheets) {
+        await this.SpreadsheetModel.deleteMany({});
+        this.createSheet(newSheet);
+        return newSheet;
+      }
 
-    await this.createSheet(newSheet);
-    this.spreadsheetInfo = newSheet;
-    return newSheet;
+      await this.createSheet(newSheet);
+      this.spreadsheetInfo = newSheet;
+      return newSheet;
+    } catch (error) {
+      console.log(error);
+      throw new HttpException(
+        {
+          result: 'error',
+          error: 'this spreadsheet is not exist',
+        },
+        HttpStatus.NOT_FOUND,
+      );
+    }
   }
 
   private async createSheet(
     sheetDto: SpreadsheetInformationDto,
   ): Promise<void> {
-    const sheet = await this.SpreadsheetModel.create(sheetDto);
-    sheet.save();
+    try {
+      const sheet = await this.SpreadsheetModel.create(sheetDto);
+      sheet.save();
+    } catch (error) {
+      console.log(error);
+    }
   }
 
   private async getSpreadsheetInformationById(
@@ -99,17 +131,24 @@ export class GoogleService {
         timeZone,
         sheets,
         spreadsheetUrl,
-        spreadSheetId: id,
+        spreadsheetId: id,
       };
     } catch (error) {
-      console.log((error as AxiosError).response.data);
+      console.log(error);
+      throw new HttpException(
+        {
+          result: 'error',
+          error: 'this spreadsheet is not exist',
+        },
+        HttpStatus.NOT_FOUND,
+      );
     }
   }
 
   async getCellByRange(range = 'A:ZZ'): Promise<CellsRangeDto> {
     const { data } = await this.api.get<CellsRangeDto>(
       encodeURI(
-        `https://sheets.googleapis.com/v4/spreadsheets/${this.spreadsheetInfo.spreadSheetId}/values/${range}`,
+        `https://sheets.googleapis.com/v4/spreadsheets/${this.spreadsheetInfo.spreadsheetId}/values/${range}`,
       ),
     );
     return data;

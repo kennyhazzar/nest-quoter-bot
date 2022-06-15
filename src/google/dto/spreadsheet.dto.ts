@@ -10,7 +10,7 @@
 }
 
 export class SpreadsheetInformationDto {
-  spreadSheetId: string;
+  spreadsheetId: string;
   title: string;
   locale: string;
   autoRecalc: string;

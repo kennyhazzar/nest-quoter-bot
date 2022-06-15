@@ -26,22 +26,6 @@ export class GoogleService {
       if (Date.now() - this.updateTokenTimestamp > this.expiresIn) {
         await this.updateAccessToken();
       }
-      if (
-        !config.url.includes('https://sheets.googleapis.com/v4/spreadsheets/')
-      ) {
-        const sheet = await this.getCurrentSpreadsheet();
-        if (sheet) {
-          this.spreadsheetInfo = sheet;
-        } else {
-          throw new HttpException(
-            {
-              result: 'error',
-              error: 'google sheet is not valid',
-            },
-            HttpStatus.NOT_FOUND,
-          );
-        }
-      }
       config.headers['Authorization'] = `Bearer ${this.accessToken}`;
       return config;
     });
@@ -51,7 +35,7 @@ export class GoogleService {
   async updateAccessToken(): Promise<void> {
     try {
       const { data } = await axios.post<GetAccessTokenDto>(
-        `https://oauth2.googleapis.com/token`,
+        `${process.env.GOOGLE_AUTH_URI}`,
         {
           client_id: process.env.CLIENT_ID,
           client_secret: process.env.CLIENT_SECRET,
@@ -122,7 +106,7 @@ export class GoogleService {
           spreadsheetUrl,
         },
       } = await this.api.get<SpreadsheetInformationResponseDto>(
-        `https://sheets.googleapis.com/v4/spreadsheets/${id}`,
+        `${process.env.GOOGLE_API_URI}${id}`,
       );
       return {
         title,
@@ -148,9 +132,16 @@ export class GoogleService {
   async getCellByRange(range = 'A:ZZ'): Promise<CellsRangeDto> {
     const { data } = await this.api.get<CellsRangeDto>(
       encodeURI(
-        `https://sheets.googleapis.com/v4/spreadsheets/${this.spreadsheetInfo.spreadsheetId}/values/${range}`,
+        `${process.env.GOOGLE_API_URI}${this.spreadsheetInfo.spreadsheetId}/values/${range}`,
       ),
     );
     return data;
+  }
+
+  getSpreadsheetTitlesOfLists() {
+    const lists = this.spreadsheetInfo.sheets.map(
+      (sheet) => sheet.properties.title,
+    );
+    return lists ? lists : null;
   }
 }

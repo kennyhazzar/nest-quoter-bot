@@ -1,6 +1,6 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import axios, { AxiosError, AxiosInstance } from 'axios';
+import axios, { AxiosInstance } from 'axios';
 import { Model } from 'mongoose';
 import { SpreadsheetDocument } from 'src/schemas/spreadsheet.schema';
 import { CellsRangeDto } from './dto/cells-range.dto';

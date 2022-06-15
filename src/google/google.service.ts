@@ -58,6 +58,25 @@ export class GoogleService {
     return sheet ? sheet[0] : null;
   }
 
+  private async actualizeSpreadsheet(): Promise<void> {
+    const sheet = await this.getCurrentSpreadsheet();
+    try {
+      const actualized = await this.getSpreadsheetInformationById(
+        sheet.spreadsheetId,
+      );
+      this.spreadsheetInfo = actualized;
+    } catch (error) {
+      console.log(error);
+      throw new HttpException(
+        {
+          result: 'error',
+          error: 'this spreadsheet is not exist',
+        },
+        HttpStatus.NOT_FOUND,
+      );
+    }
+  }
+
   async addSpreadsheet(id: string): Promise<SpreadsheetInformationDto> {
     const [sheets, newSheet] = await Promise.all([
       this.SpreadsheetModel.find().exec(),
@@ -165,5 +184,24 @@ export class GoogleService {
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
+  }
+
+  async getCount(): Promise<number> {
+    let count = 0;
+
+    await this.actualizeSpreadsheet();
+    const lists = this.getSpreadsheetTitlesOfLists();
+
+    for (let index = 0; index < lists.length; index++) {
+      const list = lists[index];
+
+      const { values } = await this.getCellByRange(`'${list}'!A:ZZ`);
+      for (let index = 0; index < values.length; index++) {
+        const value = values[index].filter((item) => item !== '');
+        count += value.length;
+      }
+    }
+
+    return count;
   }
 }

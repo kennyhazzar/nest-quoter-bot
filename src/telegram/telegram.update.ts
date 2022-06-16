@@ -1,4 +1,5 @@
 import { Action, Command, Start, Update } from 'nestjs-telegraf';
+import { ACTIONS } from 'src/constants/ACTIONS';
 import { COMMANDS } from 'src/constants/COMMANDS';
 import { GoogleService } from 'src/google/google.service';
 import { Context, Markup, Scenes } from 'telegraf';
@@ -11,11 +12,15 @@ export class TelegramUpdate {
   startCommand(ctx: Context) {
     ctx.reply('Первый привет из этого болота');
   }
-  //todo Информация про таблицу. Сколько цитат, какие имеются листы ссылка на таблицу и кнопка добавления новой или замена текущей
+
   @Command(COMMANDS.sheet)
-  @Action('show-information')
+  @Action(ACTIONS.showInformation)
   async sheetCommand(ctx: Scenes.SceneContext) {
     const sheet = await this.googleService.getCurrentSpreadsheet();
+
+    if (ctx?.callbackQuery?.message?.message_id) {
+      ctx.deleteMessage(ctx.callbackQuery.message.message_id);
+    }
 
     const { message_id } = await ctx.reply(
       'Собираю инфу...',
@@ -86,13 +91,13 @@ export class TelegramUpdate {
     ctx.scene.enter('add-spreadsheet');
   }
 
-  @Action('add-spreadsheet-callback')
+  @Action(ACTIONS.addSpreadsheetCallback)
   addSpreadsheetCallback(ctx: Scenes.SceneContext) {
     ctx.deleteMessage(ctx.callbackQuery.message.message_id);
     ctx.scene.enter('add-spreadsheet');
   }
 
-  @Action('delete-current-spreadsheet')
+  @Action(ACTIONS.deleteCurrentSpreadsheet)
   async deleteCurrentSpreadsheet(ctx: Scenes.SceneContext) {
     ctx.deleteMessage(ctx.callbackQuery.message.message_id);
     const { message_id } = await ctx.reply('Удаляем...');

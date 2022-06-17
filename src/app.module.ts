@@ -8,6 +8,8 @@ import { SpreadsheetSchema } from './schemas/spreadsheet.schema';
 import { SpreadsheetInformationDto } from './google/dto/spreadsheet.dto';
 import { TelegramModule } from './telegram/telegram.module';
 import { session } from 'telegraf';
+import { CronsModule } from './crons/crons.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
@@ -25,6 +27,8 @@ import { session } from 'telegraf';
       middlewares: [session()],
     }),
     GoogleModule,
+    ScheduleModule.forRoot(),
+    CronsModule,
   ],
   providers: [GoogleService],
 })

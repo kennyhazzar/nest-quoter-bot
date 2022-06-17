@@ -1,5 +1,8 @@
 import { Action, Command, Start, Update } from 'nestjs-telegraf';
+import { AbortMarkup } from 'src/constants/AbortMarkup';
+import { ACTIONS } from 'src/constants/ACTIONS';
 import { COMMANDS } from 'src/constants/COMMANDS';
+import { WIZARDS } from 'src/constants/WIZARDS';
 import { GoogleService } from 'src/google/google.service';
 import { Context, Markup, Scenes } from 'telegraf';
 
@@ -11,11 +14,15 @@ export class TelegramUpdate {
   startCommand(ctx: Context) {
     ctx.reply('Первый привет из этого болота');
   }
-  //todo Информация про таблицу. Сколько цитат, какие имеются листы ссылка на таблицу и кнопка добавления новой или замена текущей
+
   @Command(COMMANDS.sheet)
-  @Action('show-information')
+  @Action(ACTIONS.showInformation)
   async sheetCommand(ctx: Scenes.SceneContext) {
     const sheet = await this.googleService.getCurrentSpreadsheet();
+
+    if (ctx?.callbackQuery?.message?.message_id) {
+      ctx.deleteMessage(ctx.callbackQuery.message.message_id);
+    }
 
     const { message_id } = await ctx.reply(
       'Собираю инфу...',
@@ -75,9 +82,37 @@ export class TelegramUpdate {
   }
 
   @Command(COMMANDS.schedule)
+  @Action(ACTIONS.menuInterval)
   scheduleCommand(ctx: Context) {
+    if (ctx?.callbackQuery?.message?.message_id) {
+      ctx.deleteMessage(ctx.callbackQuery.message.message_id);
+    }
     ctx.reply(
-      'Просмотр информации по текущему расписанию. Добавление и удаление ремайндеров',
+      'Просмотр информации по текущему расписанию. Добавление и удаление интервалов',
+      {
+        reply_markup: {
+          inline_keyboard: [
+            [
+              {
+                text: 'Список интервалов',
+                callback_data: ACTIONS.intervalList,
+              },
+            ],
+            [
+              {
+                text: 'Удаление интервала',
+                callback_data: ACTIONS.deleteInterval,
+              },
+            ],
+            [
+              {
+                text: 'Добавление интервала',
+                callback_data: ACTIONS.addInterval,
+              },
+            ],
+          ],
+        },
+      },
     );
   }
 
@@ -86,13 +121,13 @@ export class TelegramUpdate {
     ctx.scene.enter('add-spreadsheet');
   }
 
-  @Action('add-spreadsheet-callback')
+  @Action(ACTIONS.addSpreadsheetCallback)
   addSpreadsheetCallback(ctx: Scenes.SceneContext) {
     ctx.deleteMessage(ctx.callbackQuery.message.message_id);
     ctx.scene.enter('add-spreadsheet');
   }
 
-  @Action('delete-current-spreadsheet')
+  @Action(ACTIONS.deleteCurrentSpreadsheet)
   async deleteCurrentSpreadsheet(ctx: Scenes.SceneContext) {
     ctx.deleteMessage(ctx.callbackQuery.message.message_id);
     const { message_id } = await ctx.reply('Удаляем...');
@@ -107,5 +142,28 @@ export class TelegramUpdate {
       ctx.deleteMessage(message_id);
       ctx.reply('Похоже, в моих чертогах произошел сбой...Спрос c разраба');
     }
+  }
+
+  @Action(ACTIONS.intervalList)
+  getListInterval(ctx: Context) {
+    ctx.reply(
+      'Показывает список активных интервалов, их информация, имя и т.д.',
+    );
+  }
+
+  @Command(COMMANDS.addInterval)
+  @Action(ACTIONS.addInterval)
+  addInterval(ctx: Scenes.SceneContext) {
+    if (ctx?.callbackQuery?.message?.message_id) {
+      ctx.deleteMessage(ctx.callbackQuery.message.message_id);
+    }
+    ctx.reply(`Придумайте название интервала`, AbortMarkup);
+    ctx.scene.enter(WIZARDS.addInterval);
+  }
+
+  @Action(ACTIONS.deleteInterval)
+  deleteInterval(ctx: Scenes.SceneContext) {
+    ctx.deleteMessage(ctx.callbackQuery.message.message_id);
+    ctx.scene.enter(WIZARDS.deleteInterval);
   }
 }

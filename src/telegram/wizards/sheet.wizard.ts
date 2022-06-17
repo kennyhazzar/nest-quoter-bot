@@ -35,7 +35,7 @@ export class AddSheetWizard {
 
       ctx.deleteMessage(message_id);
 
-      ctx.reply(`Таблица \`${result.title}\`добавлена успешно`, {
+      ctx.reply(`Таблица \`${result.title}\` добавлена успешно`, {
         reply_markup: {
           inline_keyboard: [
             [{ text: result.title, url: result.spreadsheetUrl }],

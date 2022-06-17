@@ -58,7 +58,7 @@ export class GoogleService {
     return sheet ? sheet[0] : null;
   }
 
-  private async actualizeSpreadsheet(): Promise<void> {
+  async actualizeSpreadsheet(): Promise<void> {
     const sheet = await this.getCurrentSpreadsheet();
     try {
       const actualized = await this.getSpreadsheetInformationById(

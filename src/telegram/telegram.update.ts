@@ -1,3 +1,4 @@
+import { SchedulerRegistry } from '@nestjs/schedule';
 import { Action, Command, Start, Update } from 'nestjs-telegraf';
 import { AbortMarkup } from 'src/constants/AbortMarkup';
 import { ACTIONS } from 'src/constants/ACTIONS';
@@ -8,7 +9,10 @@ import { Context, Markup, Scenes } from 'telegraf';
 
 @Update()
 export class TelegramUpdate {
-  constructor(private readonly googleService: GoogleService) {}
+  constructor(
+    private readonly googleService: GoogleService,
+    private schedulerRegisty: SchedulerRegistry,
+  ) {}
 
   @Start()
   startCommand(ctx: Context) {
@@ -133,9 +137,15 @@ export class TelegramUpdate {
     const { message_id } = await ctx.reply('Удаляем...');
     try {
       await this.googleService.deleteSpreadsheet();
+      const intervals = this.schedulerRegisty.getIntervals();
+      if (intervals) {
+        intervals.map((interval) =>
+          this.schedulerRegisty.deleteInterval(interval),
+        );
+      }
       ctx.deleteMessage(message_id);
       ctx.reply(
-        'Таблица успешно удалена из базы данных. Чтобы добавить снова, используйте /add',
+        'Таблица успешно удалена из базы данных. А также удалены все интервалы. Чтобы добавить снова, используйте /add',
       );
     } catch (error) {
       console.log(error);
@@ -146,8 +156,25 @@ export class TelegramUpdate {
 
   @Action(ACTIONS.intervalList)
   getListInterval(ctx: Context) {
-    ctx.reply(
-      'Показывает список активных интервалов, их информация, имя и т.д.',
+    ctx.deleteMessage();
+    const intervals = this.schedulerRegisty.getIntervals();
+    ctx.replyWithMarkdown(
+      'Показывает список активных интервалов, их информация, имя и т.д. (пока только имена):\n' +
+        `${
+          intervals.length != 0
+            ? intervals.map(
+                (interval, index) => '\n' + `${index + 1}. \`${interval}\``,
+              )
+            : 'У вас пока нету интервалов'
+        }`,
+      {
+        reply_markup: {
+          remove_keyboard: true,
+          inline_keyboard: [
+            [{ text: 'Меню интервалов', callback_data: ACTIONS.menuInterval }],
+          ],
+        },
+      },
     );
   }
 

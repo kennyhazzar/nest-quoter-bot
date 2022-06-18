@@ -1,5 +1,6 @@
 import { Context, Wizard, WizardStep } from 'nestjs-telegraf';
 import { AbortMarkup } from 'src/constants/AbortMarkup';
+import { SheetWizardMarkup } from 'src/constants/keyboards/sheet-wizard-markup.keyboard';
 import { GoogleService } from 'src/google/google.service';
 import { Markup, Scenes } from 'telegraf';
 
@@ -35,15 +36,10 @@ export class AddSheetWizard {
 
       ctx.deleteMessage(message_id);
 
-      ctx.reply(`Таблица \`${result.title}\` добавлена успешно`, {
-        reply_markup: {
-          inline_keyboard: [
-            [{ text: result.title, url: result.spreadsheetUrl }],
-            [{ text: 'Посмотреть', callback_data: 'show-information' }],
-          ],
-        },
-        parse_mode: 'Markdown',
-      });
+      ctx.reply(
+        `Таблица \`${result.title}\` добавлена успешно`,
+        SheetWizardMarkup(result),
+      );
       return ctx.scene.leave();
     } catch (error: any) {
       ctx.reply(

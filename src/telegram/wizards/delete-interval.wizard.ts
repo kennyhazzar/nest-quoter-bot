@@ -1,7 +1,7 @@
 import { SchedulerRegistry } from '@nestjs/schedule';
 import { Context, Wizard, WizardStep } from 'nestjs-telegraf';
 import { AbortMarkup } from 'src/constants/AbortMarkup';
-import { ACTIONS } from 'src/constants/ACTIONS';
+import { MenuIntervalMarkup } from 'src/constants/keyboards/menu-interval-markup.keyboard';
 import { WIZARDS } from 'src/constants/WIZARDS';
 import { CronsService } from 'src/crons/crons.service';
 import { Markup, Scenes } from 'telegraf';
@@ -34,19 +34,7 @@ export class DeleteIntervalWizard {
       this.cronsService.deleteInterval(intervalName);
       await ctx.replyWithMarkdown(
         `Интервал \`${intervalName}\` удален успешно!`,
-        {
-          reply_markup: {
-            remove_keyboard: true,
-            inline_keyboard: [
-              [
-                {
-                  text: 'Меню интервалов',
-                  callback_data: ACTIONS.menuInterval,
-                },
-              ],
-            ],
-          },
-        },
+        MenuIntervalMarkup(),
       );
     } catch (error) {
       ctx.reply('Кажется, Такого интервала нету, попробуйте еще раз!');

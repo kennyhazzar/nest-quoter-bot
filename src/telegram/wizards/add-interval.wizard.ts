@@ -1,9 +1,10 @@
 import { SchedulerRegistry } from '@nestjs/schedule';
 import { Context, On, Wizard, WizardStep } from 'nestjs-telegraf';
-import { ACTIONS } from 'src/constants/ACTIONS';
 import { COMMANDS } from 'src/constants/COMMANDS';
+import { MenuIntervalMarkup } from 'src/constants/keyboards/menu-interval-markup.keyboard';
 import { WIZARDS } from 'src/constants/WIZARDS';
 import { CronsService } from 'src/crons/crons.service';
+import { GoogleService } from 'src/google/google.service';
 import { Markup, Scenes } from 'telegraf';
 
 @Wizard(WIZARDS.addInterval)
@@ -14,8 +15,9 @@ export class AddIntervalWizard {
   };
 
   constructor(
-    private cronsService: CronsService,
+    private readonly cronsService: CronsService,
     private schedulerRegisty: SchedulerRegistry,
+    private readonly googleService: GoogleService,
   ) {}
 
   @WizardStep(1)
@@ -59,6 +61,19 @@ export class AddIntervalWizard {
       return;
     }
     this.intervalState.time = intervalTime * 3600000;
+    await this.googleService.actualizeSpreadsheet();
+    const lists = this.googleService.getSpreadsheetTitlesOfLists();
+    await ctx.replyWithMarkdown(
+      `Отправьте лист, с которого хотите получать цитаты: ${lists.map(
+        (list, index) => '\n' + `${index + 1}. \`${list}\``,
+      )}`,
+    );
+    ctx.wizard.next();
+  }
+
+  @WizardStep(3)
+  @On('text')
+  async addList(@Context() ctx: Scenes.WizardContext) {
     this.cronsService.addInterval(
       this.intervalState.name,
       this.intervalState.time,
@@ -68,14 +83,7 @@ export class AddIntervalWizard {
       `Интервал \`${this.intervalState.name}\` на ${
         this.intervalState.time / 3600000
       } часов добавлен!`,
-      {
-        reply_markup: {
-          remove_keyboard: true,
-          inline_keyboard: [
-            [{ text: 'Меню интервалов', callback_data: ACTIONS.menuInterval }],
-          ],
-        },
-      },
+      MenuIntervalMarkup(),
     );
     await ctx.scene.leave();
   }

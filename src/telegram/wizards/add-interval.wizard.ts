@@ -1,4 +1,5 @@
-import { SchedulerRegistry } from '@nestjs/schedule';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import { Context, On, Wizard, WizardStep } from 'nestjs-telegraf';
 import { COMMANDS } from 'src/constants/COMMANDS';
 import { MenuIntervalMarkup } from 'src/constants/keyboards/menu-interval-markup.keyboard';
@@ -6,6 +7,7 @@ import { WIZARDS } from 'src/constants/WIZARDS';
 import { CronsService } from 'src/crons/crons.service';
 import { GoogleService } from 'src/google/google.service';
 import { IIntervalState } from 'src/interfaces/interval-state.interface';
+import { IntervalDocument } from 'src/schemas/interval.schema';
 import { Markup, Scenes } from 'telegraf';
 
 @Wizard(WIZARDS.addInterval)
@@ -14,12 +16,14 @@ export class AddIntervalWizard {
     name: null,
     time: null,
     list: null,
+    userId: null,
   };
 
   constructor(
     private readonly cronsService: CronsService,
-    private schedulerRegisty: SchedulerRegistry,
     private readonly googleService: GoogleService,
+    @InjectModel(IIntervalState.name)
+    private IntervalModel: Model<IntervalDocument>,
   ) {}
 
   @WizardStep(1)
@@ -33,19 +37,20 @@ export class AddIntervalWizard {
       return;
     }
 
-    try {
-      const interval = this.schedulerRegisty.getInterval(intervalName);
-      if (interval) {
-        ctx.reply(
-          'Кажется, интервал с таким названием уже есть. Попробуйте другое название',
-          Markup.removeKeyboard(),
-        );
-        ctx.scene.leave();
-        return;
-      }
-    } catch (error) {
-      this.intervalState.name = intervalName;
+    const interval = await this.IntervalModel.findOne({ name: intervalName });
+
+    if (interval) {
+      ctx.reply(
+        'Кажется, интервал с таким названием уже есть. Попробуйте другое название',
+        Markup.removeKeyboard(),
+      );
+      ctx.scene.leave();
+      return;
     }
+
+    this.intervalState.name = intervalName;
+    this.intervalState.userId = ctx.chat.id;
+
     ctx.wizard.next();
     ctx.reply('Отправьте интервал в часах, в которые хотите получать цитаты');
     return;
@@ -73,8 +78,10 @@ export class AddIntervalWizard {
     }
 
     this.intervalState.time = intervalTime * 3600000;
+
     await this.googleService.actualizeSpreadsheet();
     const lists = this.googleService.getSpreadsheetTitlesOfLists();
+
     await ctx.replyWithMarkdown(
       `Отправьте лист, с которого хотите получать цитаты: ${lists.map(
         (list, index) => '\n' + `${index + 1}. \`${list}\``,

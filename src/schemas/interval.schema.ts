@@ -12,6 +12,8 @@ export class Interval {
   time: number;
   @Prop({ required: true, unique: false, type: String })
   list: string;
+  @Prop({ required: true, unique: false, type: Number })
+  userId: number;
 }
 
 export const IntervalSchema = SchemaFactory.createForClass(Interval);

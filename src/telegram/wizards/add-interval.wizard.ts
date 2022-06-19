@@ -80,7 +80,7 @@ export class AddIntervalWizard {
       )}\nЕсли вы хотите получать цитаты со всех листов, напишите \`all\``,
       {
         reply_markup: {
-          keyboard: [['all'], ['Прервать']],
+          keyboard: [...lists.map((list) => [list]), ['all'], ['Прервать']],
           resize_keyboard: true,
         },
       },
@@ -101,14 +101,14 @@ export class AddIntervalWizard {
 
     const lists = this.googleService.getSpreadsheetTitlesOfLists();
 
-    if (!lists.includes(intervalList)) {
+    if (![...lists, 'all'].includes(intervalList)) {
       await ctx.replyWithMarkdown(
         `Кажется, такого листа в вашей таблице нет. Попробуйте еще раз!\nОтправьте лист, с которого хотите получать цитаты: ${lists.map(
           (list, index) => '\n' + `${index + 1}. \`${list}\``,
         )}\nЕсли вы хотите получать цитаты со всех листов, напишите \`all\``,
         {
           reply_markup: {
-            keyboard: [['all'], ['Прервать']],
+            keyboard: [...lists.map((list) => [list]), ['all'], ['Прервать']],
             resize_keyboard: true,
           },
         },

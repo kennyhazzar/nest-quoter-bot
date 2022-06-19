@@ -37,6 +37,7 @@ export class DeleteIntervalWizard {
         MenuIntervalMarkup(),
       );
     } catch (error) {
+      console.log(error);
       ctx.reply('Кажется, Такого интервала нету, попробуйте еще раз!');
       ctx.wizard.selectStep(1);
       return;

@@ -5,11 +5,12 @@ import { MenuIntervalMarkup } from 'src/constants/keyboards/menu-interval-markup
 import { WIZARDS } from 'src/constants/WIZARDS';
 import { CronsService } from 'src/crons/crons.service';
 import { GoogleService } from 'src/google/google.service';
+import { IIntervalState } from 'src/interfaces/interval-state.interface';
 import { Markup, Scenes } from 'telegraf';
 
 @Wizard(WIZARDS.addInterval)
 export class AddIntervalWizard {
-  private intervalState: { name: string; time: number; list: string } = {
+  private intervalState: IIntervalState = {
     name: null,
     time: null,
     list: null,

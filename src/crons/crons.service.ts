@@ -1,7 +1,11 @@
 import { Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
 import { SchedulerRegistry } from '@nestjs/schedule';
+import { Model } from 'mongoose';
 import { InjectBot } from 'nestjs-telegraf';
 import { GoogleService } from 'src/google/google.service';
+import { IIntervalState } from 'src/interfaces/interval-state.interface';
+import { IntervalDocument } from 'src/schemas/interval.schema';
 import { getRandomInArray } from 'src/utils/random';
 import { Context, Telegraf } from 'telegraf';
 
@@ -11,6 +15,8 @@ export class CronsService {
     private schedulerRegisty: SchedulerRegistry,
     private readonly googleService: GoogleService,
     @InjectBot() private bot: Telegraf<Context>,
+    @InjectModel(IIntervalState.name)
+    private IntervalModel: Model<IntervalDocument>,
   ) {}
 
   async addInterval(
@@ -19,13 +25,31 @@ export class CronsService {
     userId: number,
     list: string,
   ) {
-    console.log(`list on crons module${list}`);
+    new this.IntervalModel({
+      name,
+      time: milliseconds,
+      list,
+    }).save();
+
     const sendQuoteCallback = async () => {
-      await this.googleService.actualizeSpreadsheet();
+      const callBackIntervalName = name;
+      const [dbInterval] = await Promise.all([
+        this.IntervalModel.findOne({ name: callBackIntervalName }),
+        this.googleService.actualizeSpreadsheet(),
+      ]);
       const lists = this.googleService.getSpreadsheetTitlesOfLists();
 
+      if (!lists.includes(dbInterval.list)) {
+        return;
+      }
+
+      const listString =
+        dbInterval.list === 'all'
+          ? lists[getRandomInArray(lists)]
+          : dbInterval.list;
+
       const { values: range } = await this.googleService.getCellByRange(
-        `'${lists[getRandomInArray(lists)]}'!A:ZZ`,
+        `'${listString}'!A:ZZ`,
       );
 
       const randomRange = range[getRandomInArray(range)].filter(
@@ -54,7 +78,8 @@ export class CronsService {
     this.schedulerRegisty.addInterval(name, interval);
   }
 
-  deleteInterval(name: string) {
+  async deleteInterval(name: string) {
+    await this.IntervalModel.deleteOne({ name });
     this.schedulerRegisty.deleteInterval(name);
   }
 

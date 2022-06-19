@@ -78,6 +78,7 @@ export class TelegramUpdate {
     if (!this.googleService.spreadsheetInfo) {
       ctx.reply(
         'Чтобы просматривать информацию про расписание, следует добавить таблицу. Добавьте здесь: /add',
+        Markup.removeKeyboard(),
       );
       return;
     }

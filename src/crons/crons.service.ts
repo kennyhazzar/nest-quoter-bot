@@ -13,7 +13,13 @@ export class CronsService {
     @InjectBot() private bot: Telegraf<Context>,
   ) {}
 
-  async addInterval(name: string, milliseconds: number, userId: number) {
+  async addInterval(
+    name: string,
+    milliseconds: number,
+    userId: number,
+    list: string,
+  ) {
+    console.log(`list on crons module${list}`);
     const sendQuoteCallback = async () => {
       await this.googleService.actualizeSpreadsheet();
       const lists = this.googleService.getSpreadsheetTitlesOfLists();

@@ -9,9 +9,10 @@ import { Markup, Scenes } from 'telegraf';
 
 @Wizard(WIZARDS.addInterval)
 export class AddIntervalWizard {
-  private intervalState = {
+  private intervalState: { name: string; time: number; list: string } = {
     name: null,
     time: null,
+    list: null,
   };
 
   constructor(
@@ -24,6 +25,7 @@ export class AddIntervalWizard {
   @On('text')
   async storeIntervalName(@Context() ctx: Scenes.WizardContext) {
     const intervalName = (ctx as any).message.text as string;
+
     if (intervalName === 'Прервать') {
       await ctx.reply('Добавление интервала прервано', Markup.removeKeyboard());
       ctx.scene.leave();
@@ -51,7 +53,15 @@ export class AddIntervalWizard {
   @WizardStep(2)
   @On('text')
   async addIntervalTime(@Context() ctx: Scenes.WizardContext) {
-    const intervalTime = (ctx as any).message.text as number;
+    const intervalTime = (ctx as any).message.text;
+    if (intervalTime === 'Прервать') {
+      await ctx.reply('Добавление интервала прервано', Markup.removeKeyboard());
+      ctx.scene.leave();
+      return;
+    }
+
+    intervalTime as number;
+
     if (intervalTime === NaN) {
       ctx.reply(
         `Кажется, это не число, попробуйте еще раз! ${COMMANDS.addInterval}`,
@@ -60,13 +70,20 @@ export class AddIntervalWizard {
       ctx.scene.leave();
       return;
     }
+
     this.intervalState.time = intervalTime * 3600000;
     await this.googleService.actualizeSpreadsheet();
     const lists = this.googleService.getSpreadsheetTitlesOfLists();
     await ctx.replyWithMarkdown(
       `Отправьте лист, с которого хотите получать цитаты: ${lists.map(
         (list, index) => '\n' + `${index + 1}. \`${list}\``,
-      )}`,
+      )}\nЕсли вы хотите получать цитаты со всех листов, напишите \`all\``,
+      {
+        reply_markup: {
+          keyboard: [['all'], ['Прервать']],
+          resize_keyboard: true,
+        },
+      },
     );
     ctx.wizard.next();
   }
@@ -74,10 +91,39 @@ export class AddIntervalWizard {
   @WizardStep(3)
   @On('text')
   async addList(@Context() ctx: Scenes.WizardContext) {
+    const intervalList = (ctx as any).message.text as string;
+
+    if (intervalList === 'Прервать') {
+      await ctx.reply('Добавление интервала прервано', Markup.removeKeyboard());
+      ctx.scene.leave();
+      return;
+    }
+
+    const lists = this.googleService.getSpreadsheetTitlesOfLists();
+
+    if (!lists.includes(intervalList)) {
+      await ctx.replyWithMarkdown(
+        `Кажется, такого листа в вашей таблице нет. Попробуйте еще раз!\nОтправьте лист, с которого хотите получать цитаты: ${lists.map(
+          (list, index) => '\n' + `${index + 1}. \`${list}\``,
+        )}\nЕсли вы хотите получать цитаты со всех листов, напишите \`all\``,
+        {
+          reply_markup: {
+            keyboard: [['all'], ['Прервать']],
+            resize_keyboard: true,
+          },
+        },
+      );
+      ctx.wizard.selectStep(2);
+      return;
+    }
+
+    this.intervalState.list = intervalList;
+
     this.cronsService.addInterval(
       this.intervalState.name,
       this.intervalState.time,
       ctx.chat.id,
+      this.intervalState.list,
     );
     await ctx.replyWithMarkdown(
       `Интервал \`${this.intervalState.name}\` на ${

@@ -3,6 +3,11 @@ import { Action, Command, Start, Update } from 'nestjs-telegraf';
 import { AbortMarkup } from 'src/constants/AbortMarkup';
 import { ACTIONS } from 'src/constants/ACTIONS';
 import { COMMANDS } from 'src/constants/COMMANDS';
+import { AddSpreadsheetMarkup } from 'src/constants/keyboards/add-spreadsheet-markup.keyboard';
+import { DeleteIntervalMarkup } from 'src/constants/keyboards/delete-interval-markup.keyboard';
+import { MenuIntervalMarkup } from 'src/constants/keyboards/menu-interval-markup.keyboard';
+import { ScheduleCommandMarkup } from 'src/constants/keyboards/schedule-command-markup.keyboard';
+import { ShowInformationMarkup } from 'src/constants/keyboards/show-information-markup.keyboard';
 import { WIZARDS } from 'src/constants/WIZARDS';
 import { GoogleService } from 'src/google/google.service';
 import { Context, Markup, Scenes } from 'telegraf';
@@ -16,7 +21,7 @@ export class TelegramUpdate {
 
   @Start()
   startCommand(ctx: Context) {
-    ctx.reply('Первый привет из этого болота');
+    ctx.reply('Привет! Воспользуйся командами из меню:)');
   }
 
   @Command(COMMANDS.sheet)
@@ -35,7 +40,8 @@ export class TelegramUpdate {
 
     if (!sheet) {
       ctx.reply(
-        'Кажется, вы еще не добавили таблицу с цитатами. Добавьте, используя /add',
+        'Кажется, вы еще не добавили таблицу с цитатами.',
+        AddSpreadsheetMarkup(),
       );
       ctx.deleteMessage(message_id);
       return;
@@ -52,36 +58,13 @@ export class TelegramUpdate {
 
     ctx.deleteMessage(message_id);
 
+    const lists = this.googleService.getSpreadsheetTitlesOfLists();
+
     ctx.reply(
-      `Таблица: \`${sheet.title}\`\nСтраницы:${sheet.sheets.map(
-        (list) => ` \`${list.properties.title}\` `,
+      `Таблица: \`${sheet.title}\`\nСтраницы:${lists.map(
+        (list) => ` \`${list}\` `,
       )}\nКоличество цитат: \`${quoterCount}\``,
-      {
-        reply_markup: {
-          inline_keyboard: [
-            [
-              {
-                text: 'Новая таблица',
-                callback_data: 'add-spreadsheet-callback',
-              },
-            ],
-            [
-              {
-                text: 'Удалить текущую',
-                callback_data: 'delete-current-spreadsheet',
-              },
-            ],
-            [
-              {
-                text: `${sheet.title}`,
-                url: `${sheet.spreadsheetUrl}`,
-              },
-            ],
-          ],
-        },
-        parse_mode: 'Markdown',
-        disable_web_page_preview: true,
-      },
+      ShowInformationMarkup(sheet),
     );
   }
 
@@ -91,32 +74,18 @@ export class TelegramUpdate {
     if (ctx?.callbackQuery?.message?.message_id) {
       ctx.deleteMessage(ctx.callbackQuery.message.message_id);
     }
+
+    if (!this.googleService.spreadsheetInfo) {
+      ctx.reply(
+        'Чтобы просматривать информацию про расписание, следует добавить таблицу. Добавьте здесь: /add',
+        Markup.removeKeyboard(),
+      );
+      return;
+    }
+
     ctx.reply(
       'Просмотр информации по текущему расписанию. Добавление и удаление интервалов',
-      {
-        reply_markup: {
-          inline_keyboard: [
-            [
-              {
-                text: 'Список интервалов',
-                callback_data: ACTIONS.intervalList,
-              },
-            ],
-            [
-              {
-                text: 'Удаление интервала',
-                callback_data: ACTIONS.deleteInterval,
-              },
-            ],
-            [
-              {
-                text: 'Добавление интервала',
-                callback_data: ACTIONS.addInterval,
-              },
-            ],
-          ],
-        },
-      },
+      ScheduleCommandMarkup(),
     );
   }
 
@@ -145,7 +114,8 @@ export class TelegramUpdate {
       }
       ctx.deleteMessage(message_id);
       ctx.reply(
-        'Таблица успешно удалена из базы данных. А также удалены все интервалы. Чтобы добавить снова, используйте /add',
+        'Таблица успешно удалена из базы данных. А также удалены все интервалы.',
+        AddSpreadsheetMarkup(),
       );
     } catch (error) {
       console.log(error);
@@ -157,6 +127,15 @@ export class TelegramUpdate {
   @Action(ACTIONS.intervalList)
   getListInterval(ctx: Context) {
     ctx.deleteMessage();
+
+    if (!this.googleService.spreadsheetInfo) {
+      ctx.reply(
+        'Чтобы просматривать информацию про расписание, следует добавить таблицу.',
+        AddSpreadsheetMarkup(),
+      );
+      return;
+    }
+
     const intervals = this.schedulerRegisty.getIntervals();
     ctx.replyWithMarkdown(
       'Показывает список активных интервалов, их информация, имя и т.д. (пока только имена):\n' +
@@ -167,14 +146,7 @@ export class TelegramUpdate {
               )
             : 'У вас пока нету интервалов'
         }`,
-      {
-        reply_markup: {
-          remove_keyboard: true,
-          inline_keyboard: [
-            [{ text: 'Меню интервалов', callback_data: ACTIONS.menuInterval }],
-          ],
-        },
-      },
+      MenuIntervalMarkup(),
     );
   }
 
@@ -184,6 +156,15 @@ export class TelegramUpdate {
     if (ctx?.callbackQuery?.message?.message_id) {
       ctx.deleteMessage(ctx.callbackQuery.message.message_id);
     }
+
+    if (!this.googleService.spreadsheetInfo) {
+      ctx.reply(
+        'Чтобы добавлять интервалы, следует добавить таблицу.',
+        AddSpreadsheetMarkup(),
+      );
+      return;
+    }
+
     ctx.reply(`Придумайте название интервала`, AbortMarkup);
     ctx.scene.enter(WIZARDS.addInterval);
   }
@@ -191,6 +172,25 @@ export class TelegramUpdate {
   @Action(ACTIONS.deleteInterval)
   deleteInterval(ctx: Scenes.SceneContext) {
     ctx.deleteMessage(ctx.callbackQuery.message.message_id);
+    if (!this.googleService.spreadsheetInfo) {
+      ctx.reply(
+        'Чтобы удалять интервалы, следует добавить таблицу.',
+        AddSpreadsheetMarkup(),
+      );
+      return;
+    }
+
+    const intervals = this.schedulerRegisty.getIntervals();
+
+    if (intervals.length === 0) {
+      ctx.reply(
+        'Кажется, у вас нету интервалов на удаление',
+        DeleteIntervalMarkup(),
+      );
+
+      return;
+    }
+
     ctx.scene.enter(WIZARDS.deleteInterval);
   }
 }

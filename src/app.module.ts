@@ -10,7 +10,8 @@ import { TelegramModule } from './telegram/telegram.module';
 import { session } from 'telegraf';
 import { CronsModule } from './crons/crons.module';
 import { ScheduleModule } from '@nestjs/schedule';
-
+import { IIntervalState } from 'src/interfaces/interval-state.interface';
+import { IntervalSchema } from './schemas/interval.schema';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -20,6 +21,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     MongooseModule.forRoot(process.env.MONGODB_URI),
     MongooseModule.forFeature([
       { name: SpreadsheetInformationDto.name, schema: SpreadsheetSchema },
+      { name: IIntervalState.name, schema: IntervalSchema },
     ]),
     TelegramModule,
     TelegrafModule.forRoot({

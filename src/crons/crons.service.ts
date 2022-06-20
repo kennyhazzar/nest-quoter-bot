@@ -21,6 +21,7 @@ export class CronsService implements OnApplicationBootstrap {
 
   async activatedIntervals() {
     const intervals = await this.IntervalModel.find({});
+    const intervalsFromSchedule = this.schedulerRegisty.getIntervals();
 
     if (intervals.length === 0) {
       return;
@@ -37,7 +38,7 @@ export class CronsService implements OnApplicationBootstrap {
         ]);
         const lists = this.googleService.getSpreadsheetTitlesOfLists();
 
-        if (!lists.includes(dbInterval.list)) {
+        if (![...lists, 'all'].includes(dbInterval.list)) {
           return;
         }
 
@@ -50,9 +51,12 @@ export class CronsService implements OnApplicationBootstrap {
           `'${listString}'!A:ZZ`,
         );
 
-        const randomRange = range[getRandomInArray(range)].filter(
-          (item) => item !== '',
-        );
+        const filteredRange = range.filter((range) => range.length !== 0);
+
+        const randomRange = filteredRange[
+          getRandomInArray(filteredRange)
+        ].filter((item) => item !== '');
+
         const quote = randomRange[getRandomInArray(randomRange)];
 
         if (!quote) {
@@ -73,8 +77,13 @@ export class CronsService implements OnApplicationBootstrap {
       };
 
       try {
-        const addIntervalResult = setInterval(sendQuoteCallback, interval.time);
-        this.schedulerRegisty.addInterval(interval.name, addIntervalResult);
+        if (!intervalsFromSchedule.includes(interval.name)) {
+          const addIntervalResult = setInterval(
+            sendQuoteCallback,
+            interval.time,
+          );
+          this.schedulerRegisty.addInterval(interval.name, addIntervalResult);
+        }
       } catch (error) {
         console.log(error);
       }
@@ -102,7 +111,7 @@ export class CronsService implements OnApplicationBootstrap {
       ]);
       const lists = this.googleService.getSpreadsheetTitlesOfLists();
 
-      if (!lists.includes(dbInterval.list)) {
+      if (![...lists, 'all'].includes(dbInterval.list)) {
         return;
       }
 
@@ -115,9 +124,12 @@ export class CronsService implements OnApplicationBootstrap {
         `'${listString}'!A:ZZ`,
       );
 
-      const randomRange = range[getRandomInArray(range)].filter(
+      const filteredRange = range.filter((range) => range.length !== 0);
+
+      const randomRange = filteredRange[getRandomInArray(filteredRange)].filter(
         (item) => item !== '',
       );
+
       const quote = randomRange[getRandomInArray(randomRange)];
 
       if (!quote) {
@@ -148,12 +160,10 @@ export class CronsService implements OnApplicationBootstrap {
 
   getIntervals() {
     const intervals = this.schedulerRegisty.getIntervals();
-    console.log(intervals);
     return intervals ? intervals : null;
   }
 
   onApplicationBootstrap() {
     this.activatedIntervals();
-    console.log('intervals has been activated from db');
   }
 }

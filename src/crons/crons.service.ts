@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { SchedulerRegistry } from '@nestjs/schedule';
 import { Model } from 'mongoose';
@@ -10,16 +10,14 @@ import { getRandomInArray } from 'src/utils/random';
 import { Context, Telegraf } from 'telegraf';
 
 @Injectable()
-export class CronsService {
+export class CronsService implements OnApplicationBootstrap {
   constructor(
     private schedulerRegisty: SchedulerRegistry,
     private readonly googleService: GoogleService,
     @InjectBot() private bot: Telegraf<Context>,
     @InjectModel(IIntervalState.name)
     private IntervalModel: Model<IntervalDocument>,
-  ) {
-    this.activatedIntervals();
-  }
+  ) {}
 
   async activatedIntervals() {
     const intervals = await this.IntervalModel.find({});
@@ -152,5 +150,10 @@ export class CronsService {
     const intervals = this.schedulerRegisty.getIntervals();
     console.log(intervals);
     return intervals ? intervals : null;
+  }
+
+  onApplicationBootstrap() {
+    this.activatedIntervals();
+    console.log('intervals has been activated from db');
   }
 }

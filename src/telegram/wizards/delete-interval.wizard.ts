@@ -6,7 +6,7 @@ import { WIZARDS } from 'src/constants/WIZARDS';
 import { CronsService } from 'src/crons/crons.service';
 import { IIntervalState } from 'src/interfaces/interval-state.interface';
 import { IntervalDocument } from 'src/schemas/interval.schema';
-import { Markup, Scenes } from 'telegraf';
+import { Scenes } from 'telegraf';
 
 @Wizard(WIZARDS.deleteInterval)
 export class DeleteIntervalWizard {

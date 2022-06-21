@@ -1,13 +1,12 @@
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Context, Wizard, WizardStep } from 'nestjs-telegraf';
-import { AbortMarkup } from 'src/constants/AbortMarkup';
 import { MenuIntervalMarkup } from 'src/constants/keyboards/menu-interval-markup.keyboard';
 import { WIZARDS } from 'src/constants/WIZARDS';
 import { CronsService } from 'src/crons/crons.service';
 import { IIntervalState } from 'src/interfaces/interval-state.interface';
 import { IntervalDocument } from 'src/schemas/interval.schema';
-import { Markup, Scenes } from 'telegraf';
+import { Scenes } from 'telegraf';
 
 @Wizard(WIZARDS.deleteInterval)
 export class DeleteIntervalWizard {
@@ -18,8 +17,14 @@ export class DeleteIntervalWizard {
   ) {}
 
   @WizardStep(1)
-  addIntervalName(@Context() ctx: Scenes.WizardContext) {
-    ctx.reply(`Введите название интервала`, AbortMarkup);
+  async addIntervalName(@Context() ctx: Scenes.WizardContext) {
+    const intervals = await this.IntervalModel.find({});
+    await ctx.reply(`Введите название интервала`, {
+      reply_markup: {
+        keyboard: [...intervals.map(({ name }) => [name]), ['Прервать']],
+        resize_keyboard: true,
+      },
+    });
     ctx.wizard.next();
   }
 
@@ -28,7 +33,7 @@ export class DeleteIntervalWizard {
     const intervalName = (ctx as any).message.text as string;
 
     if (intervalName === 'Прервать') {
-      await ctx.reply('Удаление интервала прервано', Markup.removeKeyboard());
+      await ctx.reply('Удаление интервала прервано', MenuIntervalMarkup());
       ctx.scene.leave();
       return;
     }

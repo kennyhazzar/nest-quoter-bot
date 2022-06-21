@@ -1,4 +1,6 @@
+import { InjectModel } from '@nestjs/mongoose';
 import { SchedulerRegistry } from '@nestjs/schedule';
+import { Model } from 'mongoose';
 import { Action, Command, Start, Update } from 'nestjs-telegraf';
 import { AbortMarkup } from 'src/constants/AbortMarkup';
 import { ACTIONS } from 'src/constants/ACTIONS';
@@ -10,6 +12,8 @@ import { ScheduleCommandMarkup } from 'src/constants/keyboards/schedule-command-
 import { ShowInformationMarkup } from 'src/constants/keyboards/show-information-markup.keyboard';
 import { WIZARDS } from 'src/constants/WIZARDS';
 import { GoogleService } from 'src/google/google.service';
+import { IIntervalState } from 'src/interfaces/interval-state.interface';
+import { IntervalDocument } from 'src/schemas/interval.schema';
 import { Context, Markup, Scenes } from 'telegraf';
 
 @Update()
@@ -17,13 +21,11 @@ export class TelegramUpdate {
   constructor(
     private readonly googleService: GoogleService,
     private schedulerRegisty: SchedulerRegistry,
+    @InjectModel(IIntervalState.name)
+    private IntervalModel: Model<IntervalDocument>,
   ) {}
 
   @Start()
-  startCommand(ctx: Context) {
-    ctx.reply('Привет! Воспользуйся командами из меню:)');
-  }
-
   @Command(COMMANDS.sheet)
   @Action(ACTIONS.showInformation)
   async sheetCommand(ctx: Scenes.SceneContext) {
@@ -125,7 +127,7 @@ export class TelegramUpdate {
   }
 
   @Action(ACTIONS.intervalList)
-  getListInterval(ctx: Context) {
+  async getListInterval(ctx: Context) {
     ctx.deleteMessage();
 
     if (!this.googleService.spreadsheetInfo) {
@@ -136,15 +138,19 @@ export class TelegramUpdate {
       return;
     }
 
-    const intervals = this.schedulerRegisty.getIntervals();
-    ctx.replyWithMarkdown(
-      'Показывает список активных интервалов, их информация, имя и т.д. (пока только имена):\n' +
+    const intervals = await this.IntervalModel.find({});
+    await ctx.replyWithMarkdown(
+      'Имя, время, лист:\n' +
         `${
           intervals.length != 0
             ? intervals.map(
-                (interval, index) => '\n' + `${index + 1}. \`${interval}\``,
+                (interval, index) =>
+                  '\n' +
+                  `${index + 1}. \`${interval.name}\` | раз в ${
+                    interval.time / 3600000
+                  } часов | \`${interval.list}\``,
               )
-            : 'У вас пока нету интервалов'
+            : '**У вас пока нету интервалов**'
         }`,
       MenuIntervalMarkup(),
     );

@@ -2,18 +2,20 @@ import { InjectModel } from '@nestjs/mongoose';
 import { SchedulerRegistry } from '@nestjs/schedule';
 import { Model } from 'mongoose';
 import { Action, Command, Start, Update } from 'nestjs-telegraf';
-import { AbortMarkup } from 'src/constants/AbortMarkup';
-import { ACTIONS } from 'src/constants/ACTIONS';
-import { COMMANDS } from 'src/constants/COMMANDS';
-import { AddSpreadsheetMarkup } from 'src/constants/keyboards/add-spreadsheet-markup.keyboard';
-import { DeleteIntervalMarkup } from 'src/constants/keyboards/delete-interval-markup.keyboard';
-import { MenuIntervalMarkup } from 'src/constants/keyboards/menu-interval-markup.keyboard';
-import { ScheduleCommandMarkup } from 'src/constants/keyboards/schedule-command-markup.keyboard';
-import { ShowInformationMarkup } from 'src/constants/keyboards/show-information-markup.keyboard';
-import { WIZARDS } from 'src/constants/WIZARDS';
+import {
+  AddSpreadsheetMarkup,
+  DeleteIntervalMarkup,
+  MenuIntervalMarkup,
+  ScheduleCommandMarkup,
+  ShowInformationMarkup,
+  WIZARDS,
+  ACTIONS,
+  COMMANDS,
+  AbortMarkup,
+} from 'src/constants';
 import { GoogleService } from 'src/google/google.service';
-import { IIntervalState } from 'src/interfaces/interval-state.interface';
-import { IntervalDocument } from 'src/schemas/interval.schema';
+import { IIntervalState } from 'src/interfaces';
+import { IntervalDocument } from 'src/schemas';
 import { Context, Markup, Scenes } from 'telegraf';
 
 @Update()

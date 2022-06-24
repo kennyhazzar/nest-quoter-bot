@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { SpreadsheetSchema } from 'src/schemas/spreadsheet.schema';
-import { SpreadsheetInformationDto } from './dto/spreadsheet.dto';
+import { SpreadsheetSchema } from 'src/schemas';
+import { SpreadsheetInformationDto } from './dto';
 import { GoogleController } from './google.controller';
 import { GoogleService } from './google.service';
 

@@ -4,9 +4,9 @@ import { SchedulerRegistry } from '@nestjs/schedule';
 import { Model } from 'mongoose';
 import { InjectBot } from 'nestjs-telegraf';
 import { GoogleService } from 'src/google/google.service';
-import { IIntervalState } from 'src/interfaces/interval-state.interface';
-import { IntervalDocument } from 'src/schemas/interval.schema';
-import { getRandomInArray } from 'src/utils/random';
+import { IIntervalState } from 'src/interfaces';
+import { IntervalDocument } from 'src/schemas';
+import { getRandomInArray } from 'src/utils';
 import { Context, Telegraf } from 'telegraf';
 
 @Injectable()

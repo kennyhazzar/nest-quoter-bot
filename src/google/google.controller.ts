@@ -1,5 +1,5 @@
 import { Controller, Get, Post, Query } from '@nestjs/common';
-import { SpreadsheetInformationDto } from './dto/spreadsheet.dto';
+import { SpreadsheetInformationDto } from './dto';
 import { GoogleService } from './google.service';
 
 @Controller('google')

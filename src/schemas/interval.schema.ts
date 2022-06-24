@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
-import { IIntervalState } from 'src/interfaces/interval-state.interface';
+import { IIntervalState } from 'src/interfaces';
 
 export type IntervalDocument = IIntervalState & Document;
 

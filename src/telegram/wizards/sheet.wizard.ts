@@ -1,6 +1,5 @@
 import { Context, Wizard, WizardStep } from 'nestjs-telegraf';
-import { AbortMarkup } from 'src/constants/AbortMarkup';
-import { SheetWizardMarkup } from 'src/constants/keyboards/sheet-wizard-markup.keyboard';
+import { AbortMarkup, SheetWizardMarkup } from 'src/constants';
 import { GoogleService } from 'src/google/google.service';
 import { Markup, Scenes } from 'telegraf';
 

@@ -1,10 +1,9 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { SpreadsheetInformationDto } from 'src/google/dto/spreadsheet.dto';
+import { SpreadsheetInformationDto } from 'src/google';
 import { GoogleService } from 'src/google/google.service';
-import { IIntervalState } from 'src/interfaces/interval-state.interface';
-import { IntervalSchema } from 'src/schemas/interval.schema';
-import { SpreadsheetSchema } from 'src/schemas/spreadsheet.schema';
+import { IIntervalState } from 'src/interfaces';
+import { IntervalSchema, SpreadsheetSchema } from 'src/schemas';
 import { CronsService } from './crons.service';
 
 @Module({

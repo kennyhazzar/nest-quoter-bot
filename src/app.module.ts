@@ -4,14 +4,14 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { TelegrafModule } from 'nestjs-telegraf';
 import { GoogleService } from './google/google.service';
 import { GoogleModule } from './google/google.module';
-import { SpreadsheetSchema } from './schemas/spreadsheet.schema';
-import { SpreadsheetInformationDto } from './google/dto/spreadsheet.dto';
+import { SpreadsheetSchema, IntervalSchema } from 'src/schemas';
+import { SpreadsheetInformationDto } from './google';
 import { TelegramModule } from './telegram/telegram.module';
 import { session } from 'telegraf';
 import { CronsModule } from './crons/crons.module';
 import { ScheduleModule } from '@nestjs/schedule';
-import { IIntervalState } from 'src/interfaces/interval-state.interface';
-import { IntervalSchema } from './schemas/interval.schema';
+import { IIntervalState } from 'src/interfaces';
+
 @Module({
   imports: [
     ConfigModule.forRoot({

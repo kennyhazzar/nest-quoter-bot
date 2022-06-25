@@ -4,9 +4,9 @@ import { SchedulerRegistry } from '@nestjs/schedule';
 import { Model } from 'mongoose';
 import { InjectBot } from 'nestjs-telegraf';
 import { GoogleService } from 'src/google/google.service';
-import { IIntervalState } from 'src/interfaces/interval-state.interface';
-import { IntervalDocument } from 'src/schemas/interval.schema';
-import { getRandomInArray } from 'src/utils/random';
+import { IIntervalState } from 'src/interfaces';
+import { IntervalDocument } from 'src/schemas';
+import { getRandomInArray } from 'src/utils';
 import { Context, Telegraf } from 'telegraf';
 
 @Injectable()
@@ -19,92 +19,9 @@ export class CronsService implements OnApplicationBootstrap {
     private IntervalModel: Model<IntervalDocument>,
   ) {}
 
-  async activatedIntervals() {
-    const intervals = await this.IntervalModel.find({});
-    const intervalsFromSchedule = this.schedulerRegisty.getIntervals();
-
-    if (intervals.length === 0) {
-      return;
-    }
-
-    for (let index = 0; index < intervals.length; index++) {
-      const interval = intervals[index];
-
-      const sendQuoteCallback = async () => {
-        const callBackIntervalName = interval.name;
-        const [dbInterval] = await Promise.all([
-          this.IntervalModel.findOne({ name: callBackIntervalName }),
-          this.googleService.actualizeSpreadsheet(),
-        ]);
-        const lists = this.googleService.getSpreadsheetTitlesOfLists();
-
-        if (![...lists, 'all'].includes(dbInterval.list)) {
-          return;
-        }
-
-        const listString =
-          dbInterval.list === 'all'
-            ? lists[getRandomInArray(lists)]
-            : dbInterval.list;
-
-        const { values: range } = await this.googleService.getCellByRange(
-          `'${listString}'!A:ZZ`,
-        );
-
-        const filteredRange = range.filter((range) => range.length !== 0);
-
-        const randomRange = filteredRange[
-          getRandomInArray(filteredRange)
-        ].filter((item) => item !== '');
-
-        const quote = randomRange[getRandomInArray(randomRange)];
-
-        if (!quote) {
-          this.bot.telegram.sendMessage(
-            interval.userId,
-            'Кажется, найденная сейчас рандомом цитата сломана, попробуем отправить лучше в следующий раз',
-            {
-              reply_markup: {
-                remove_keyboard: true,
-              },
-            },
-          );
-        }
-
-        this.bot.telegram.sendMessage(interval.userId, quote, {
-          reply_markup: { remove_keyboard: true },
-        });
-      };
-
-      try {
-        if (!intervalsFromSchedule.includes(interval.name)) {
-          const addIntervalResult = setInterval(
-            sendQuoteCallback,
-            interval.time,
-          );
-          this.schedulerRegisty.addInterval(interval.name, addIntervalResult);
-        }
-      } catch (error) {
-        console.log(error);
-      }
-    }
-  }
-
-  async addInterval(
-    name: string,
-    milliseconds: number,
-    userId: number,
-    list: string,
-  ) {
-    new this.IntervalModel({
-      name,
-      time: milliseconds,
-      list,
-      userId,
-    }).save();
-
-    const sendQuoteCallback = async () => {
-      const callBackIntervalName = name;
+  sendQuoteCallback(interval: string, userId: number) {
+    return async () => {
+      const callBackIntervalName = interval;
       const [dbInterval] = await Promise.all([
         this.IntervalModel.findOne({ name: callBackIntervalName }),
         this.googleService.actualizeSpreadsheet(),
@@ -148,8 +65,50 @@ export class CronsService implements OnApplicationBootstrap {
         reply_markup: { remove_keyboard: true },
       });
     };
+  }
 
-    const interval = setInterval(sendQuoteCallback, milliseconds);
+  async activatedIntervals() {
+    const intervals = await this.IntervalModel.find({});
+    const intervalsFromSchedule = this.schedulerRegisty.getIntervals();
+
+    if (intervals.length === 0) {
+      return;
+    }
+
+    for (let index = 0; index < intervals.length; index++) {
+      const interval = intervals[index];
+
+      try {
+        if (!intervalsFromSchedule.includes(interval.name)) {
+          const addIntervalResult = setInterval(
+            this.sendQuoteCallback(interval.name, interval.userId),
+            interval.time,
+          );
+          this.schedulerRegisty.addInterval(interval.name, addIntervalResult);
+        }
+      } catch (error) {
+        console.log(error);
+      }
+    }
+  }
+
+  async addInterval(
+    name: string,
+    milliseconds: number,
+    userId: number,
+    list: string,
+  ) {
+    new this.IntervalModel({
+      name,
+      time: milliseconds,
+      list,
+      userId,
+    }).save();
+
+    const interval = setInterval(
+      this.sendQuoteCallback(name, userId),
+      milliseconds,
+    );
     this.schedulerRegisty.addInterval(name, interval);
   }
 

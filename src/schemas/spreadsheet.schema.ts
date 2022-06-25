@@ -1,8 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import {
-  Sheet,
-  SpreadsheetInformationDto,
-} from 'src/google/dto/spreadsheet.dto';
+import { Sheet, SpreadsheetInformationDto } from 'src/google';
 
 export type SpreadsheetDocument = SpreadsheetInformationDto & Document;
 

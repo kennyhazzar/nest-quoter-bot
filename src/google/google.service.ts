@@ -2,13 +2,13 @@ import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import axios, { AxiosInstance } from 'axios';
 import { Model } from 'mongoose';
-import { SpreadsheetDocument } from 'src/schemas/spreadsheet.schema';
-import { CellsRangeDto } from './dto/cells-range.dto';
-import { GetAccessTokenDto } from './dto/get-access-token.dto';
+import { SpreadsheetDocument } from 'src/schemas';
 import {
+  CellsRangeDto,
+  GetAccessTokenDto,
   SpreadsheetInformationDto,
   SpreadsheetInformationResponseDto,
-} from './dto/spreadsheet.dto';
+} from './dto';
 
 @Injectable()
 export class GoogleService {

@@ -1,13 +1,11 @@
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Context, On, Wizard, WizardStep } from 'nestjs-telegraf';
-import { COMMANDS } from 'src/constants/COMMANDS';
-import { MenuIntervalMarkup } from 'src/constants/keyboards/menu-interval-markup.keyboard';
-import { WIZARDS } from 'src/constants/WIZARDS';
+import { MenuIntervalMarkup, COMMANDS, WIZARDS } from 'src/constants';
 import { CronsService } from 'src/crons/crons.service';
 import { GoogleService } from 'src/google/google.service';
-import { IIntervalState } from 'src/interfaces/interval-state.interface';
-import { IntervalDocument } from 'src/schemas/interval.schema';
+import { IIntervalState } from 'src/interfaces';
+import { IntervalDocument } from 'src/schemas';
 import { Markup, Scenes } from 'telegraf';
 
 @Wizard(WIZARDS.addInterval)
